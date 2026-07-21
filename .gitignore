@@ -14,7 +14,7 @@ wheels/
 pip-wheel-metadata/
 share/python-wheels/
 MANIFEST
-
+.env.example
 # Virtual environments
 .venv/
 venv/
@@ -61,7 +61,7 @@ htmlcov/
 .nox/
 coverage.xml
 *.cover
-
+*.bat
 # Local notes
 *.bak
 tmp/
