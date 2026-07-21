@@ -53,6 +53,8 @@ class NightActions:
     maniac_target: int | None = None
     mistress_target: int | None = None
     lawyer_target: int | None = None
+    homeless_target: int | None = None
+    homeless_informed: bool = False
     done: set[int] = field(default_factory=set)
 
 
@@ -90,7 +92,7 @@ class Game:
     winners: list[str] = field(default_factory=list)
     phase_task: Any = None
     last_night: NightReport | None = None
-    mafia_announced: bool = False
+    wake_announced: set[str] = field(default_factory=set)
 
     @property
     def is_hard(self) -> bool:
@@ -123,7 +125,7 @@ class Game:
 
     def reset_night(self) -> None:
         self.night_actions = NightActions()
-        self.mafia_announced = False
+        self.wake_announced = set()
         self.last_night = None
 
     def reset_vote(self) -> None:

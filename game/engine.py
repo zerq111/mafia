@@ -47,6 +47,43 @@ def night_actors_done(game: Game) -> bool:
     return True
 
 
+def player_left_home(game: Game, player: Player, *, night_over: bool = False) -> bool | None:
+    """Ушёл ли игрок из дома ночью.
+
+    True — не дома, False — дома, None — ещё может выйти (ждём ход или конец ночи).
+    Доктор, лечащий себя, считается дома. Воздержание / нет хода к рассвету — дома.
+    """
+    if not player.alive or not player.role:
+        return False
+    if player.blocked_until_day_end:
+        return False
+    if not has_night_action(player.role):
+        return False
+
+    actions = game.night_actions
+    uid = player.user_id
+    role = player.role
+
+    if uid not in actions.done:
+        return False if night_over else None
+
+    if role == Role.DOCTOR:
+        return bool(actions.doctor_target) and actions.doctor_target != uid
+    if role == Role.COMMISSIONER:
+        return actions.commissioner_target is not None
+    if role == Role.MANIAC:
+        return actions.maniac_target is not None
+    if role == Role.MISTRESS:
+        return actions.mistress_target is not None
+    if role == Role.LAWYER:
+        return actions.lawyer_target is not None
+    if role in (Role.DON, Role.MAFIA):
+        return uid in actions.mafia_votes
+    if role == Role.HOMELESS:
+        return actions.homeless_target is not None
+    return False
+
+
 def resolve_mafia_target(game: Game) -> int | None:
     votes = game.night_actions.mafia_votes
     if not votes:
@@ -162,28 +199,10 @@ def resolve_night(game: Game) -> NightReport:
                 doctor.doctor_self_used = True
             _dm(report, doctor.user_id, "priv.doctor_went", name=alive[tid].mention())
 
-    # Бомж
+    # Бомж — только визит (результат «дома/не дома» шлётся в контроллере по ходу ночи)
     homeless = game.by_role(Role.HOMELESS)
-    if homeless and not blocked(homeless.user_id):
-        lang = get_user_lang(homeless.user_id)
-        lines = []
-        for actor_id, target_id, visit_key in report.visits:
-            if actor_id == homeless.user_id:
-                continue
-            target = game.get(target_id)
-            if target:
-                lines.append(
-                    t(
-                        "priv.homeless_visit",
-                        lang,
-                        label=t(visit_key, lang),
-                        name=target.mention(),
-                    )
-                )
-        if lines:
-            _dm(report, homeless.user_id, "priv.homeless_seen", lines="\n".join(lines))
-        else:
-            _dm(report, homeless.user_id, "priv.homeless_quiet")
+    if homeless and not blocked(homeless.user_id) and actions.homeless_target in alive:
+        report.visits.append((homeless.user_id, actions.homeless_target, "visit.homeless"))
 
     # Смерти
     for target_id, killer in kills.items():

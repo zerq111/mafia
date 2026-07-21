@@ -75,6 +75,8 @@ async def _night_pick(
 
     if attr == "mafia":
         await controller.announce_mafia_done(game)
+    else:
+        await controller.announce_role_wake(game, player.role)
     await controller.maybe_finish_night_early(game)
 
 
@@ -132,6 +134,7 @@ async def night_comm_target(callback: CallbackQuery, controller: GameController)
     await callback.answer(t("cb.accepted", lang))
     if callback.message:
         await callback.message.edit_text(t("cb.comm_done", lang, action=action, name=target.mention()))
+    await controller.announce_role_wake(game, Role.COMMISSIONER)
     await controller.maybe_finish_night_early(game)
 
 
@@ -177,6 +180,17 @@ async def night_lawyer(callback: CallbackQuery, controller: GameController) -> N
         roles={Role.LAWYER},
         attr="lawyer_target",
         done_text_key="cb.lawyer_done",
+    )
+
+
+@router.callback_query(F.data.startswith("night:homeless:"))
+async def night_homeless(callback: CallbackQuery, controller: GameController) -> None:
+    await _night_pick(
+        callback,
+        controller,
+        roles={Role.HOMELESS},
+        attr="homeless_target",
+        done_text_key="cb.homeless_done",
     )
 
 

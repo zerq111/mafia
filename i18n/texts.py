@@ -26,7 +26,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "role.suicide.title": "Самоубийца",
         "role.suicide.desc": "Побеждает только если его казнят дневным голосованием.",
         "role.homeless.title": "Бомж",
-        "role.homeless.desc": "Видит ночные визиты: кто к кому ходил.",
+        "role.homeless.desc": "Ночью заходит к игроку: был ли хозяин дома (ушёл ли на ночное дело).",
         "role.lucky.title": "Счастливчик",
         "role.lucky.desc": "При покушении может выжить благодаря удаче.",
         "role.kamikaze.title": "Камикадзе",
@@ -39,6 +39,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "visit.maniac": "Маньяк",
         "visit.commissioner": "Комиссар",
         "visit.doctor": "Доктор",
+        "visit.homeless": "Бомж",
         # private start
         "start.welcome": (
             "🤵🏻 <b>Мафия</b>\n\n"
@@ -172,7 +173,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "night.wake.commissioner": "<b>🕵️‍ Комиссар Каттани</b> ушёл искать злодеев...",
         "night.wake.mistress": "<b>💃🏼 Любовница</b> уже ждёт кого-то в гости...",
         "night.wake.mafia": "<b>🤵🏻 Мафия</b> выбрала жертву...",
-        "night.wake.homeless": "<b>🧙‍♂️ Бомж</b> бродит по тёмным улицам...",
+        "night.wake.homeless": "<b>🧙‍♂️ Бомж</b> пошёл к кому-то за бутылкой...",
         "night.alive_header": "<b>Живые игроки:</b>",
         "night.sleep_left_1": "Спать осталось 1 мин.",
         "night.sleep_left_n": "Спать осталось {n} мин.",
@@ -233,7 +234,14 @@ TEXTS: dict[str, dict[str, str]] = {
         "night.maniac_pick": "🔪 Выберите жертву:",
         "night.mistress_pick": "💋 Кого отвлечь на ночь?",
         "night.lawyer_pick": "💼 Выберите подзащитного:",
-        "night.homeless": "🚶 Вы бродите по городу. Утром узнаете, кого видели.",
+        "night.homeless": "🚶 Вы бродите по городу.",
+        "night.homeless_pick": (
+            "🚶 К кому зайти за бутылкой?\n"
+            "Узнаете, был ли хозяин дома: если он уйдёт по делу — сразу; "
+            "если до рассвета не выйдет — был дома."
+        ),
+        "priv.homeless_home": "🚪 Вы зашли к {name}. Хозяин был дома.",
+        "priv.homeless_away": "🚪 Вы зашли к {name}. Хозяина не было дома.",
         "night.sergeant": "👮 Вы дежурите. Если комиссар сделает проверку — я сообщу результат.",
         "btn.check": "🔍 Проверить",
         "btn.shoot": "🔫 Выстрелить",
@@ -252,9 +260,6 @@ TEXTS: dict[str, dict[str, str]] = {
         "priv.sergeant_check": "👮 Комиссар проверил {name}: {label}.",
         "priv.doctor_self_used": "Вы уже использовали самолечение. Лечение не сработало.",
         "priv.doctor_went": "Вы выехали к {name}.",
-        "priv.homeless_seen": "🚶 Ночные наблюдения:\n{lines}",
-        "priv.homeless_visit": "• Кто-то ({label}) ходил к {name}",
-        "priv.homeless_quiet": "🚶 Ночь была тихой — вы никого не заметили.",
         "pub.saved": "💊 Доктор спас {name} этой ночью!",
         "pub.lucky": "🍀 На {name} было покушение, но удача на стороне счастливчика!",
         "pub.death": (
@@ -296,6 +301,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "cb.mistress_done": "💋 Отвлекаете: {name}",
         "cb.lawyer_ok": "Клиент выбран.",
         "cb.lawyer_done": "💼 Подзащитный: {name}",
+        "cb.homeless_done": "🚶 Вы пошли к {name}",
         "cb.not_in_game": "Вы не в игре.",
         "cb.cant_vote": "Сейчас нельзя голосовать.",
         "cb.abstained": "Воздержались.",
@@ -332,7 +338,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "role.suicide.title": "Самогубець",
         "role.suicide.desc": "Перемагає лише якщо його стратять денним голосуванням.",
         "role.homeless.title": "Безхатько",
-        "role.homeless.desc": "Бачить нічні візити: хто до кого ходив.",
+        "role.homeless.desc": "Вночі заходить до гравця: чи був господар вдома (чи пішов на нічну справу).",
         "role.lucky.title": "Щасливчик",
         "role.lucky.desc": "При замаху може вижити завдяки удачі.",
         "role.kamikaze.title": "Камікадзе",
@@ -345,6 +351,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "visit.maniac": "Маніяк",
         "visit.commissioner": "Комісар",
         "visit.doctor": "Лікар",
+        "visit.homeless": "Безхатько",
         "start.welcome": (
             "🤵🏻 <b>Мафія</b>\n\n"
             "Безкоштовний бот для гри в Мафію в Telegram-чатах.\n\n"
@@ -475,7 +482,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "night.wake.commissioner": "<b>🕵️‍ Комісар Каттані</b> пішов шукати лиходіїв...",
         "night.wake.mistress": "<b>💃🏼 Коханка</b> вже чекає когось у гості...",
         "night.wake.mafia": "<b>🤵🏻 Мафія</b> обрала жертву...",
-        "night.wake.homeless": "<b>🧙‍♂️ Безхатько</b> блукає темними вулицями...",
+        "night.wake.homeless": "<b>🧙‍♂️ Безхатько</b> пішов до когось за пляшкою...",
         "night.alive_header": "<b>Живі гравці:</b>",
         "night.sleep_left_1": "Спати залишилось 1 хв.",
         "night.sleep_left_n": "Спати залишилось {n} хв.",
@@ -535,7 +542,14 @@ TEXTS: dict[str, dict[str, str]] = {
         "night.maniac_pick": "🔪 Оберіть жертву:",
         "night.mistress_pick": "💋 Кого відволікти на ніч?",
         "night.lawyer_pick": "💼 Оберіть підзахисного:",
-        "night.homeless": "🚶 Ви блукаєте містом. Вранці дізнаєтесь, кого бачили.",
+        "night.homeless": "🚶 Ви блукаєте містом.",
+        "night.homeless_pick": (
+            "🚶 До кого зайти за пляшкою?\n"
+            "Дізнаєтесь, чи був господар вдома: якщо він піде у справах — одразу; "
+            "якщо до світанку не вийде — був вдома."
+        ),
+        "priv.homeless_home": "🚪 Ви зайшли до {name}. Господар був вдома.",
+        "priv.homeless_away": "🚪 Ви зайшли до {name}. Господаря не було вдома.",
         "night.sergeant": "👮 Ви чергуєте. Якщо комісар зробить перевірку — я повідомлю результат.",
         "btn.check": "🔍 Перевірити",
         "btn.shoot": "🔫 Вистрілити",
@@ -553,9 +567,6 @@ TEXTS: dict[str, dict[str, str]] = {
         "priv.sergeant_check": "👮 Комісар перевірив {name}: {label}.",
         "priv.doctor_self_used": "Ви вже використали самолікування. Лікування не спрацювало.",
         "priv.doctor_went": "Ви виїхали до {name}.",
-        "priv.homeless_seen": "🚶 Нічні спостереження:\n{lines}",
-        "priv.homeless_visit": "• Хтось ({label}) ходив до {name}",
-        "priv.homeless_quiet": "🚶 Ніч була тихою — ви нікого не помітили.",
         "pub.saved": "💊 Лікар врятував {name} цієї ночі!",
         "pub.lucky": "🍀 На {name} був замах, але удача на боці щасливчика!",
         "pub.death": (
@@ -596,6 +607,7 @@ TEXTS: dict[str, dict[str, str]] = {
         "cb.mistress_done": "💋 Відволікаєте: {name}",
         "cb.lawyer_ok": "Клієнта обрано.",
         "cb.lawyer_done": "💼 Підзахисний: {name}",
+        "cb.homeless_done": "🚶 Ви пішли до {name}",
         "cb.not_in_game": "Ви не в грі.",
         "cb.cant_vote": "Зараз не можна голосувати.",
         "cb.abstained": "Утрималися.",

@@ -18,6 +18,7 @@ from game.engine import (
     death_text,
     format_alive_list,
     night_actors_done,
+    player_left_home,
     promote_roles,
     render_lines,
     resolve_night,
@@ -39,14 +40,14 @@ logger = logging.getLogger(__name__)
 # Мут «до конца фазы» vs «до конца игры» (hard)
 SOFT_EXTRA = 60
 
-WAKE_LINES = (
-    (Role.MANIAC, "night.wake.maniac"),
-    (Role.LAWYER, "night.wake.lawyer"),
-    (Role.DOCTOR, "night.wake.doctor"),
-    (Role.COMMISSIONER, "night.wake.commissioner"),
-    (Role.MISTRESS, "night.wake.mistress"),
-    (Role.HOMELESS, "night.wake.homeless"),
-)
+ROLE_WAKE_KEYS: dict[Role, str] = {
+    Role.MANIAC: "night.wake.maniac",
+    Role.LAWYER: "night.wake.lawyer",
+    Role.DOCTOR: "night.wake.doctor",
+    Role.COMMISSIONER: "night.wake.commissioner",
+    Role.MISTRESS: "night.wake.mistress",
+    Role.HOMELESS: "night.wake.homeless",
+}
 
 
 class GameController:
@@ -180,12 +181,6 @@ class GameController:
             reply_markup=kb.go_bot_kb(uname, lang),
         )
 
-        roles = {p.role for p in game.alive() if p.role}
-        for role, key in WAKE_LINES:
-            if role in roles:
-                await self.group(game, t(key, lang))
-                await asyncio.sleep(0.3)
-
         await self.group(
             game,
             f"{t('night.alive_header', lang)}\n{format_alive_list(game.alive())}\n\n"
@@ -195,20 +190,54 @@ class GameController:
         await self._prompt_night(game)
         self.schedule(game, seconds, Phase.NIGHT, self.finish_night)
 
+    async def announce_role_wake(self, game: Game, role: Role | None) -> None:
+        """В чат — только после хода роли (не в начале ночи)."""
+        if game.phase != Phase.NIGHT or not role:
+            return
+        key = ROLE_WAKE_KEYS.get(role)
+        if not key or role.value in game.wake_announced:
+            return
+        if not game.by_role(role):
+            return
+        game.wake_announced.add(role.value)
+        await self.group(game, t(key, self.lang(game)))
+
+    async def update_homeless_visit(self, game: Game, *, night_over: bool = False) -> None:
+        """Бомж: дома / не дома. Ждём ход цели или рассвет."""
+        actions = game.night_actions
+        if actions.homeless_informed or not actions.homeless_target:
+            return
+        homeless = game.by_role(Role.HOMELESS)
+        if not homeless or homeless.blocked_until_day_end:
+            return
+        target = game.get(actions.homeless_target)
+        if not target:
+            return
+
+        status = player_left_home(game, target, night_over=night_over)
+        if status is None:
+            return
+
+        actions.homeless_informed = True
+        ul = get_user_lang(homeless.user_id)
+        key = "priv.homeless_away" if status else "priv.homeless_home"
+        await self.dm(homeless.user_id, t(key, ul, name=target.mention()))
+
     async def announce_mafia_done(self, game: Game) -> None:
-        if game.phase != Phase.NIGHT or game.mafia_announced:
+        if game.phase != Phase.NIGHT or "mafia" in game.wake_announced:
             return
         mafia = game.mafia()
         if not mafia or not game.night_actions.mafia_votes:
             return
         if not all(p.user_id in game.night_actions.done for p in mafia):
             return
-        game.mafia_announced = True
+        game.wake_announced.add("mafia")
         await self.group(game, t("night.wake.mafia", self.lang(game)))
 
     async def maybe_finish_night_early(self, game: Game) -> None:
         if game.phase != Phase.NIGHT:
             return
+        await self.update_homeless_visit(game)
         await self.announce_mafia_done(game)
         if night_actors_done(game):
             self.cancel_timer(game)
@@ -263,14 +292,18 @@ class GameController:
                     kb.players_targets_kb(others, "night:lawyer"),
                 )
             elif p.role == Role.HOMELESS:
-                game.night_actions.done.add(p.user_id)
-                await self.dm(p.user_id, t("night.homeless", ul))
+                await self.dm(
+                    p.user_id,
+                    t("night.homeless_pick", ul),
+                    kb.players_targets_kb(others, "night:homeless"),
+                )
             elif p.role == Role.SERGEANT:
                 await self.dm(p.user_id, t("night.sergeant", ul))
 
     async def finish_night(self, game: Game) -> None:
         if game.phase != Phase.NIGHT:
             return
+        await self.update_homeless_visit(game, night_over=True)
         report = resolve_night(game)
         game.last_night = report
 
