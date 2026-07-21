@@ -60,7 +60,16 @@ def t(key: str, lang: Lang | str | None = None, **kwargs: Any) -> str:
     template = pack.get(key) or TEXTS[Lang.RU.value].get(key) or key
     if not kwargs:
         return template
+
+    class _Safe(dict):
+        def __missing__(self, name: str) -> str:
+            return "{" + name + "}"
+
     try:
-        return template.format(**kwargs)
-    except (KeyError, ValueError):
-        return template
+        return template.format_map(_Safe(kwargs))
+    except ValueError:
+        # битые скобки в шаблоне / значении — подставляем вручную
+        out = template
+        for name, value in kwargs.items():
+            out = out.replace("{" + name + "}", str(value))
+        return out
