@@ -14,7 +14,6 @@ wheels/
 pip-wheel-metadata/
 share/python-wheels/
 MANIFEST
-.env.example
 # Virtual environments
 .venv/
 venv/
