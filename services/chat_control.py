@@ -44,8 +44,19 @@ async def safe_delete(bot: Bot, chat_id: int, message_id: int) -> None:
         pass
 
 
-async def mute_user(bot: Bot, chat_id: int, user_id: int, seconds: int = 60) -> bool:
-    until = datetime.now(timezone.utc) + timedelta(seconds=max(35, seconds))
+async def mute_user(
+    bot: Bot,
+    chat_id: int,
+    user_id: int,
+    seconds: int = 60,
+    *,
+    until_game_end: bool = False,
+) -> bool:
+    # >366 дней = «навсегда» в Telegram, снимем сами в конце игры
+    if until_game_end:
+        until = datetime.now(timezone.utc) + timedelta(days=400)
+    else:
+        until = datetime.now(timezone.utc) + timedelta(seconds=max(35, seconds))
     try:
         await bot.restrict_chat_member(
             chat_id=chat_id,
@@ -77,10 +88,17 @@ async def unmute_user(bot: Bot, chat_id: int, user_id: int) -> bool:
         return False
 
 
-async def mute_many(bot: Bot, chat_id: int, user_ids: list[int], seconds: int) -> set[int]:
+async def mute_many(
+    bot: Bot,
+    chat_id: int,
+    user_ids: list[int],
+    seconds: int,
+    *,
+    until_game_end: bool = False,
+) -> set[int]:
     muted: set[int] = set()
     for uid in user_ids:
-        if await mute_user(bot, chat_id, uid, seconds):
+        if await mute_user(bot, chat_id, uid, seconds, until_game_end=until_game_end):
             muted.add(uid)
     return muted
 

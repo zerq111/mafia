@@ -32,11 +32,21 @@ def lang_pick_kb(scope: str) -> InlineKeyboardMarkup:
     )
 
 
-def lobby_kb(lang: Lang) -> InlineKeyboardMarkup:
+def lobby_kb(lang: Lang, mode: str = "standard") -> InlineKeyboardMarkup:
+    std = t("btn.mode_standard", lang)
+    hard = t("btn.mode_hard", lang)
+    if mode == "standard":
+        std = f"• {std}"
+    else:
+        hard = f"• {hard}"
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text=t("btn.join", lang), callback_data="lobby:join")],
             [InlineKeyboardButton(text=t("btn.leave", lang), callback_data="lobby:leave")],
+            [
+                InlineKeyboardButton(text=std, callback_data="lobby:mode:standard"),
+                InlineKeyboardButton(text=hard, callback_data="lobby:mode:hard"),
+            ],
             [InlineKeyboardButton(text=t("btn.start_game", lang), callback_data="lobby:start")],
             [InlineKeyboardButton(text=t("btn.cancel", lang), callback_data="lobby:cancel")],
         ]

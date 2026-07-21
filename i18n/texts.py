@@ -81,10 +81,19 @@ TEXTS: dict[str, dict[str, str]] = {
         "btn.leave": "🚪 Выйти",
         "btn.start_game": "▶️ Начать игру",
         "btn.cancel": "✖️ Отменить",
+        "btn.mode_standard": "Стандарт",
+        "btn.mode_hard": "Хард",
+        "mode.standard": "Стандарт",
+        "mode.hard": "Хард",
+        "mode.standard.hint": "Мёртвые молчат в фазе; мут снимается по правилам фазы.",
+        "mode.hard.hint": "Выгнанных и убитых мутит до конца партии.",
         "lobby.title": "🎭 <b>Набор в Мафию</b>",
+        "lobby.mode": "Режим: <b>{mode}</b>",
+        "lobby.mode_set": "Режим: {mode}",
+        "lobby.host_only_mode": "Режим меняет только хост.",
         "lobby.players": "Игроки ({n}):",
         "lobby.empty": "— пока никого —",
-        "lobby.hint": "Хост: нажмите «Начать игру», когда все готовы.",
+        "lobby.hint": "Хост: выберите режим и нажмите «Начать игру», когда все готовы.",
         "lobby.need": "Нужно от {min} до {max} игроков.",
         "bot.need_admin": (
             "Сделайте бота администратором чата с правами:\n"
@@ -143,7 +152,7 @@ TEXTS: dict[str, dict[str, str]] = {
             "• владелец: /lang — язык чата"
         ),
         # game flow group
-        "game.started": "🎭 Игра началась! Игроков: {n}\n\n{hint}",
+        "game.started": "🎭 Игра началась! Игроков: {n}\nРежим: <b>{mode}</b>\n\n{hint}",
         "game.roles_hint": (
             "Роли розданы в личные сообщения.\n"
             "Если бот не написал вам — откройте диалог с ботом и нажмите Start."
@@ -376,10 +385,19 @@ TEXTS: dict[str, dict[str, str]] = {
         "btn.leave": "🚪 Вийти",
         "btn.start_game": "▶️ Почати гру",
         "btn.cancel": "✖️ Скасувати",
+        "btn.mode_standard": "Стандарт",
+        "btn.mode_hard": "Хард",
+        "mode.standard": "Стандарт",
+        "mode.hard": "Хард",
+        "mode.standard.hint": "Мертві мовчать у фазі; мут знімається за правилами фази.",
+        "mode.hard.hint": "Вигнаних і вбитих мутить до кінця партії.",
         "lobby.title": "🎭 <b>Набір у Мафію</b>",
+        "lobby.mode": "Режим: <b>{mode}</b>",
+        "lobby.mode_set": "Режим: {mode}",
+        "lobby.host_only_mode": "Режим змінює лише хост.",
         "lobby.players": "Гравці ({n}):",
         "lobby.empty": "— поки нікого —",
-        "lobby.hint": "Хост: натисніть «Почати гру», коли всі готові.",
+        "lobby.hint": "Хост: оберіть режим і натисніть «Почати гру», коли всі готові.",
         "lobby.need": "Потрібно від {min} до {max} гравців.",
         "bot.need_admin": (
             "Зробіть бота адміністратором чату з правами:\n"
@@ -437,7 +455,7 @@ TEXTS: dict[str, dict[str, str]] = {
             "• гравці: /start боту в особистих\n"
             "• власник: /lang — мова чату"
         ),
-        "game.started": "🎭 Гру розпочато! Гравців: {n}\n\n{hint}",
+        "game.started": "🎭 Гру розпочато! Гравців: {n}\nРежим: <b>{mode}</b>\n\n{hint}",
         "game.roles_hint": (
             "Ролі роздано в особисті повідомлення.\n"
             "Якщо бот не написав вам — відкрийте діалог із ботом і натисніть Start."

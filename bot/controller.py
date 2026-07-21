@@ -36,6 +36,9 @@ from services.media import send_animation
 
 logger = logging.getLogger(__name__)
 
+# Мут «до конца фазы» vs «до конца игры» (hard)
+SOFT_EXTRA = 60
+
 WAKE_LINES = (
     (Role.MANIAC, "night.wake.maniac"),
     (Role.LAWYER, "night.wake.lawyer"),
@@ -101,6 +104,18 @@ class GameController:
         except TelegramForbiddenError:
             return False
 
+    async def mute_eliminated(self, game: Game, *user_ids: int) -> None:
+        """В hard — мут до конца игры; в standard — короткий мут фазы."""
+        ids = [uid for uid in user_ids if uid]
+        if not ids:
+            return
+        if game.is_hard:
+            await chat.mute_many(
+                self.bot, game.chat_id, ids, 60, until_game_end=True
+            )
+        else:
+            await chat.mute_many(self.bot, game.chat_id, ids, 120)
+
     # --- lifecycle ---
 
     async def start_game(self, game: Game) -> None:
@@ -128,7 +143,11 @@ class GameController:
         hint = t("game.roles_hint", lang)
         if failed:
             hint += t("game.dm_failed", lang, names=", ".join(failed))
-        await self.group(game, t("game.started", lang, n=len(game.players), hint=hint))
+        mode_name = t(f"mode.{game.mode.value}", lang)
+        await self.group(
+            game,
+            t("game.started", lang, n=len(game.players), mode=mode_name, hint=hint),
+        )
         await self.begin_night(game)
 
     async def begin_night(self, game: Game) -> None:
@@ -143,12 +162,15 @@ class GameController:
         lang = self.lang(game)
         uname = await self.username()
 
+        # Живых — на ночь; мёртвых в hard уже держим до конца игры
         await chat.mute_many(
             self.bot,
             game.chat_id,
-            game.alive_ids() + [p.user_id for p in game.dead()],
-            seconds + 30,
+            game.alive_ids(),
+            seconds + SOFT_EXTRA,
         )
+        if game.dead():
+            await self.mute_eliminated(game, *[p.user_id for p in game.dead()])
 
         await send_animation(
             self.bot,
@@ -268,11 +290,20 @@ class GameController:
         report = game.last_night
 
         unmute = [p.user_id for p in game.players.values() if p.alive and not p.blocked_until_day_end]
-        mute = [p.user_id for p in game.players.values() if not p.alive or p.blocked_until_day_end]
+        soft_mute = [p.user_id for p in game.players.values() if p.alive and p.blocked_until_day_end]
+        dead_ids = [p.user_id for p in game.dead()]
+
         await chat.unmute_many(self.bot, game.chat_id, unmute)
-        await chat.mute_many(
-            self.bot, game.chat_id, mute, seconds + self.settings.vote_seconds + 60
-        )
+        soft_seconds = seconds + self.settings.vote_seconds + SOFT_EXTRA
+        if soft_mute:
+            await chat.mute_many(self.bot, game.chat_id, soft_mute, soft_seconds)
+        if dead_ids:
+            if game.is_hard:
+                await chat.mute_many(
+                    self.bot, game.chat_id, dead_ids, 60, until_game_end=True
+                )
+            else:
+                await chat.mute_many(self.bot, game.chat_id, dead_ids, soft_seconds)
 
         await send_animation(
             self.bot,
@@ -431,6 +462,7 @@ class GameController:
             game.phase = Phase.KAMIKAZE
             game.kamikaze_id = victim.user_id
             _, lines = apply_lynch(game, candidate)  # type: ignore[arg-type]
+            await self.mute_eliminated(game, victim.user_id)
             await self.group(game, render_lines(lines, lang))
             if game.winners:
                 await self.finish_game(game, game.winners)
@@ -446,6 +478,7 @@ class GameController:
             return
 
         _, lines = apply_lynch(game, candidate)  # type: ignore[arg-type]
+        await self.mute_eliminated(game, victim.user_id)
         await self.group(game, render_lines(lines, lang))
         if game.winners:
             await self.finish_game(game, game.winners)
@@ -475,6 +508,7 @@ class GameController:
             return
 
         target.alive = False
+        await self.mute_eliminated(game, target.user_id)
         notes = promote_roles(game)
         role = role_title(target.role, lang) if target.role else "?"
         text = t("kamikaze.took", lang, name=target.mention(), role=role)

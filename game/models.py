@@ -19,6 +19,11 @@ class Phase(str, Enum):
     ENDED = "ended"
 
 
+class GameMode(str, Enum):
+    STANDARD = "standard"
+    HARD = "hard"
+
+
 @dataclass
 class Player:
     user_id: int
@@ -75,6 +80,7 @@ class Game:
     host_id: int
     players: dict[int, Player] = field(default_factory=dict)
     phase: Phase = Phase.LOBBY
+    mode: GameMode = GameMode.STANDARD
     day_number: int = 0
     night_actions: NightActions = field(default_factory=NightActions)
     votes: dict[int, int] = field(default_factory=dict)
@@ -85,6 +91,10 @@ class Game:
     phase_task: Any = None
     last_night: NightReport | None = None
     mafia_announced: bool = False
+
+    @property
+    def is_hard(self) -> bool:
+        return self.mode == GameMode.HARD
 
     def get(self, user_id: int) -> Player | None:
         return self.players.get(user_id)

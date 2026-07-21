@@ -9,7 +9,7 @@ from aiogram.types import CallbackQuery, ChatMemberUpdated, Message
 from bot.controller import GameController
 from bot.keyboards import lobby_kb
 from config import Settings
-from game.models import Phase, Player
+from game.models import GameMode, Phase, Player
 from game.store import bind_user, create_game, end_game, get_game, unbind_user
 from i18n import get_chat_lang, get_user_lang, t
 from services.chat_control import ensure_bot_admin
@@ -30,13 +30,25 @@ def _user_mention(user) -> str:
     return f'<a href="tg://user?id={user.id}">{html.escape(user.full_name)}</a>'
 
 
-
 def _lobby_text(game, lang) -> str:
     names = "\n".join(f"• {p.mention()}" for p in game.players.values()) or t("lobby.empty", lang)
+    mode = t(f"mode.{game.mode.value}", lang)
+    mode_hint = t(f"mode.{game.mode.value}.hint", lang)
     return (
         f"{t('lobby.title', lang)}\n\n"
+        f"{t('lobby.mode', lang, mode=mode)}\n"
+        f"<i>{mode_hint}</i>\n\n"
         f"{t('lobby.players', lang, n=len(game.players))}\n{names}\n\n"
         f"{t('lobby.hint', lang)}"
+    )
+
+
+def _lobby_markup(game, lang, settings: Settings):
+    return (
+        _lobby_text(game, lang)
+        + "\n\n"
+        + t("lobby.need", lang, min=settings.min_players, max=settings.max_players),
+        lobby_kb(lang, game.mode.value),
     )
 
 
@@ -59,13 +71,8 @@ async def cmd_game(message: Message, settings: Settings) -> None:
     game.players[player.user_id] = player
     bind_user(player.user_id, game.chat_id)
 
-    await message.answer(
-        _lobby_text(game, lang)
-        + "\n\n"
-        + t("lobby.need", lang, min=settings.min_players, max=settings.max_players),
-        parse_mode="HTML",
-        reply_markup=lobby_kb(lang),
-    )
+    text, markup = _lobby_markup(game, lang, settings)
+    await message.answer(text, parse_mode="HTML", reply_markup=markup)
 
 
 @router.message(Command("stop"), F.chat.type.in_({"group", "supergroup"}))
@@ -160,13 +167,8 @@ async def lobby_join(callback: CallbackQuery, settings: Settings) -> None:
     game.players[callback.from_user.id] = _player_from_user(callback.from_user)
     bind_user(callback.from_user.id, game.chat_id)
     await callback.answer(t("lobby.joined", ulang))
-    await callback.message.edit_text(
-        _lobby_text(game, clang)
-        + "\n\n"
-        + t("lobby.need", clang, min=settings.min_players, max=settings.max_players),
-        parse_mode="HTML",
-        reply_markup=lobby_kb(clang),
-    )
+    text, markup = _lobby_markup(game, clang, settings)
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=markup)
     try:
         await callback.bot.send_message(
             callback.from_user.id,
@@ -201,13 +203,33 @@ async def lobby_leave(callback: CallbackQuery, settings: Settings) -> None:
     del game.players[callback.from_user.id]
     unbind_user(callback.from_user.id)
     await callback.answer(t("lobby.left", ulang))
-    await callback.message.edit_text(
-        _lobby_text(game, clang)
-        + "\n\n"
-        + t("lobby.need", clang, min=settings.min_players, max=settings.max_players),
-        parse_mode="HTML",
-        reply_markup=lobby_kb(clang),
-    )
+    text, markup = _lobby_markup(game, clang, settings)
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=markup)
+
+
+@router.callback_query(F.data.startswith("lobby:mode:"))
+async def lobby_mode(callback: CallbackQuery, settings: Settings) -> None:
+    assert callback.from_user and callback.message and callback.data
+    clang = get_chat_lang(callback.message.chat.id)
+    ulang = get_user_lang(callback.from_user.id)
+    game = get_game(callback.message.chat.id)
+    if not game or game.phase != Phase.LOBBY:
+        await callback.answer(t("lobby.no_recruit", ulang), show_alert=True)
+        return
+    if callback.from_user.id != game.host_id:
+        await callback.answer(t("lobby.host_only_mode", ulang), show_alert=True)
+        return
+
+    raw = callback.data.split(":")[-1]
+    try:
+        game.mode = GameMode(raw)
+    except ValueError:
+        await callback.answer()
+        return
+
+    await callback.answer(t("lobby.mode_set", ulang, mode=t(f"mode.{game.mode.value}", ulang)))
+    text, markup = _lobby_markup(game, clang, settings)
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=markup)
 
 
 @router.callback_query(F.data == "lobby:cancel")
