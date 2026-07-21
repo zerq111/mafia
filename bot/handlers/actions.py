@@ -71,7 +71,7 @@ async def _night_pick(
     ack = "cb.mafia_vote" if attr == "mafia" else "cb.accepted"
     await callback.answer(t(ack, lang))
     if callback.message:
-        await callback.message.edit_text(t(done_text_key, lang, name=target.display()))
+        await callback.message.edit_text(t(done_text_key, lang, name=target.mention()))
 
     if attr == "mafia":
         await controller.announce_mafia_done(game)
@@ -131,7 +131,7 @@ async def night_comm_target(callback: CallbackQuery, controller: GameController)
     action = t("cb.comm_check_act" if mode == "check" else "cb.comm_shoot_act", lang)
     await callback.answer(t("cb.accepted", lang))
     if callback.message:
-        await callback.message.edit_text(t("cb.comm_done", lang, action=action, name=target.display()))
+        await callback.message.edit_text(t("cb.comm_done", lang, action=action, name=target.mention()))
     await controller.maybe_finish_night_early(game)
 
 
@@ -214,7 +214,7 @@ async def vote_action(callback: CallbackQuery, controller: GameController) -> No
     game.votes[player.user_id] = target_id
     await callback.answer(t("cb.voted_for", lang, name=target.display()))
     if callback.message and callback.message.chat.type == "private":
-        await callback.message.edit_text(t("cb.your_vote", lang, name=target.display()))
+        await callback.message.edit_text(t("cb.your_vote", lang, name=target.mention()))
     await controller.announce_vote(game, player.user_id, target_id)
     await controller.maybe_finish_vote_early(game)
 
@@ -259,6 +259,6 @@ async def kamikaze_pick(callback: CallbackQuery, controller: GameController) -> 
     await callback.answer(t("cb.picked", lang))
     if callback.message:
         await callback.message.edit_text(
-            t("cb.kami_take", lang, name=target.display() if target else str(target_id))
+            t("cb.kami_take", lang, name=target.mention() if target else str(target_id))
         )
     await controller.resolve_kamikaze(game, target_id)

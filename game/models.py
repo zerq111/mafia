@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -30,12 +31,12 @@ class Player:
     is_host: bool = False
 
     def display(self) -> str:
+        """Обычное имя (кнопки, toast)."""
         return self.full_name
 
     def mention(self) -> str:
-        if self.username:
-            return f"@{self.username}"
-        return f'<a href="tg://user?id={self.user_id}">{self.full_name}</a>'
+        """Кликабельное упоминание для HTML-сообщений."""
+        return f'<a href="tg://user?id={self.user_id}">{html.escape(self.full_name)}</a>'
 
 
 @dataclass

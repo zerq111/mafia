@@ -112,10 +112,10 @@ class GameController:
         for p in game.players.values():
             ul = get_user_lang(p.user_id)
             if not await self.dm(p.user_id, role_card(p, ul)):
-                failed.append(p.display())
+                failed.append(p.mention())
             if p.role and is_mafia(p.role):
                 mates = [
-                    m.display()
+                    m.mention()
                     for m in game.players.values()
                     if m.user_id != p.user_id and m.role and is_mafia(m.role)
                 ]
@@ -284,7 +284,7 @@ class GameController:
         if report:
             for event in report.deaths:
                 victim = game.get(event.victim_id)
-                name = victim.display() if victim else str(event.victim_id)
+                name = victim.mention() if victim else str(event.victim_id)
                 await self.group(game, death_text(event, name, lang))
             for name in report.saved:
                 await self.group(game, t("pub.saved", lang, name=name))
@@ -301,7 +301,7 @@ class GameController:
 
         blocked = [p for p in game.alive() if p.blocked_until_day_end]
         blocked_note = (
-            t("day.blocked", lang, names=", ".join(p.display() for p in blocked)) if blocked else ""
+            t("day.blocked", lang, names=", ".join(p.mention() for p in blocked)) if blocked else ""
         )
         alive = game.alive()
         await self.group(
@@ -347,13 +347,13 @@ class GameController:
             return
         lang = self.lang(game)
         if target_id < 0:
-            await self.group(game, t("vote.cast_skip", lang, voter=voter.display()))
+            await self.group(game, t("vote.cast_skip", lang, voter=voter.mention()))
             return
         target = game.get(target_id)
         if target:
             await self.group(
                 game,
-                t("vote.cast", lang, voter=voter.display(), target=target.display()),
+                t("vote.cast", lang, voter=voter.mention(), target=target.mention()),
             )
 
     async def maybe_finish_vote_early(self, game: Game) -> None:
@@ -393,7 +393,7 @@ class GameController:
             ul = get_user_lang(p.user_id)
             await self.dm(
                 p.user_id,
-                t("confirm.dm", ul, name=victim.display()),
+                t("confirm.dm", ul, name=victim.mention()),
                 kb.confirm_kb(ul),
             )
         self.schedule(game, seconds, Phase.CONFIRM, self.finish_confirm)
@@ -417,7 +417,7 @@ class GameController:
         if not victim or not confirm_passed(game):
             await self.group(
                 game,
-                t("confirm.failed", lang, yes=yes, no=no, name=victim.display() if victim else "?"),
+                t("confirm.failed", lang, yes=yes, no=no, name=victim.mention() if victim else "?"),
             )
             await self.begin_night(game)
             return
@@ -435,7 +435,7 @@ class GameController:
             if game.winners:
                 await self.finish_game(game, game.winners)
                 return
-            await self.group(game, t("kamikaze.announce", lang, name=victim.display()))
+            await self.group(game, t("kamikaze.announce", lang, name=victim.mention()))
             ul = get_user_lang(victim.user_id)
             await self.dm(
                 victim.user_id,
@@ -477,7 +477,7 @@ class GameController:
         target.alive = False
         notes = promote_roles(game)
         role = role_title(target.role, lang) if target.role else "?"
-        text = t("kamikaze.took", lang, name=target.display(), role=role)
+        text = t("kamikaze.took", lang, name=target.mention(), role=role)
         if notes:
             text += "\n" + "\n".join(n.render(lang) for n in notes)
         await self.group(game, text)
@@ -501,7 +501,7 @@ class GameController:
             status = "💀" if not p.alive else "✅"
             role = role_title(p.role, lang) if p.role else "?"
             lines.append(
-                t("game.over.role_line", lang, status=status, name=p.display(), role=role)
+                t("game.over.role_line", lang, status=status, name=p.mention(), role=role)
             )
         await self.group(game, "\n".join(lines))
         end_game(game.chat_id)

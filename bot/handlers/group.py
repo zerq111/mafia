@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import html
+
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, ChatMemberUpdated, Message
@@ -24,8 +26,13 @@ def _player_from_user(user, is_host: bool = False) -> Player:
     )
 
 
+def _user_mention(user) -> str:
+    return f'<a href="tg://user?id={user.id}">{html.escape(user.full_name)}</a>'
+
+
+
 def _lobby_text(game, lang) -> str:
-    names = "\n".join(f"• {p.display()}" for p in game.players.values()) or t("lobby.empty", lang)
+    names = "\n".join(f"• {p.mention()}" for p in game.players.values()) or t("lobby.empty", lang)
     return (
         f"{t('lobby.title', lang)}\n\n"
         f"{t('lobby.players', lang, n=len(game.players))}\n{names}\n\n"
@@ -94,8 +101,8 @@ async def cmd_players(message: Message) -> None:
     if game.phase == Phase.LOBBY:
         await message.answer(_lobby_text(game, lang), parse_mode="HTML")
         return
-    alive = ", ".join(p.display() for p in game.alive()) or "—"
-    dead = ", ".join(p.display() for p in game.dead()) or "—"
+    alive = ", ".join(p.mention() for p in game.alive()) or "—"
+    dead = ", ".join(p.mention() for p in game.dead()) or "—"
     await message.answer(
         t(
             "players.status",
@@ -171,7 +178,7 @@ async def lobby_join(callback: CallbackQuery, settings: Settings) -> None:
         )
     except Exception:
         await callback.message.answer(
-            t("lobby.open_dm", clang, name=callback.from_user.full_name)
+            t("lobby.open_dm", clang, name=_user_mention(callback.from_user))
         )
 
 

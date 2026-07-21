@@ -66,12 +66,12 @@ def promote_roles(game: Game) -> list[LocMsg]:
         sergeant = game.by_role(Role.SERGEANT)
         if sergeant:
             sergeant.role = Role.COMMISSIONER
-            notes.append(LocMsg("pub.promote_comm", {"name": sergeant.display()}))
+            notes.append(LocMsg("pub.promote_comm", {"name": sergeant.mention()}))
     if not any(p.alive and p.role == Role.DON for p in game.players.values()):
         mafioso = next((p for p in game.alive() if p.role == Role.MAFIA), None)
         if mafioso:
             mafioso.role = Role.DON
-            notes.append(LocMsg("pub.promote_don", {"name": mafioso.display()}))
+            notes.append(LocMsg("pub.promote_don", {"name": mafioso.mention()}))
     return notes
 
 
@@ -93,7 +93,7 @@ def resolve_night(game: Game) -> NightReport:
         target.blocked_until_day_end = True
         report.visits.append((mistress.user_id, blocked_id, "visit.mistress"))
         _dm(report, blocked_id, "priv.mistress_block")
-        _dm(report, mistress.user_id, "priv.mistress_ok", name=target.display())
+        _dm(report, mistress.user_id, "priv.mistress_ok", name=target.mention())
 
     def blocked(uid: int) -> bool:
         return uid == blocked_id
@@ -104,7 +104,7 @@ def resolve_night(game: Game) -> NightReport:
     if lawyer and not blocked(lawyer.user_id) and actions.lawyer_target in alive:
         lawyer_client = actions.lawyer_target
         report.visits.append((lawyer.user_id, lawyer_client, "visit.lawyer"))
-        _dm(report, lawyer.user_id, "priv.lawyer_client", name=alive[lawyer_client].display())
+        _dm(report, lawyer.user_id, "priv.lawyer_client", name=alive[lawyer_client].mention())
 
     kills: dict[int, str] = {}
 
@@ -146,7 +146,7 @@ def resolve_night(game: Game) -> NightReport:
                 lang = get_user_lang(uid)
                 label = check_result_label(target.role, protected, lang)  # type: ignore[arg-type]
                 key = "priv.comm_check" if uid == commissioner.user_id else "priv.sergeant_check"
-                _dm(report, uid, key, name=target.display(), label=label)
+                _dm(report, uid, key, name=target.mention(), label=label)
 
     # Доктор
     doctor = game.by_role(Role.DOCTOR)
@@ -160,7 +160,7 @@ def resolve_night(game: Game) -> NightReport:
             report.visits.append((doctor.user_id, tid, "visit.doctor"))
             if tid == doctor.user_id:
                 doctor.doctor_self_used = True
-            _dm(report, doctor.user_id, "priv.doctor_went", name=alive[tid].display())
+            _dm(report, doctor.user_id, "priv.doctor_went", name=alive[tid].mention())
 
     # Бомж
     homeless = game.by_role(Role.HOMELESS)
@@ -177,7 +177,7 @@ def resolve_night(game: Game) -> NightReport:
                         "priv.homeless_visit",
                         lang,
                         label=t(visit_key, lang),
-                        name=target.display(),
+                        name=target.mention(),
                     )
                 )
         if lines:
@@ -191,10 +191,10 @@ def resolve_night(game: Game) -> NightReport:
         if not player or not player.role:
             continue
         if healed_id == target_id:
-            report.saved.append(player.display())
+            report.saved.append(player.mention())
             continue
         if player.role == Role.LUCKY and random.random() < 0.45:
-            report.lucky.append(player.display())
+            report.lucky.append(player.mention())
             continue
         report.deaths.append(DeathEvent(target_id, player.role, killer))
         player.alive = False
@@ -259,7 +259,7 @@ def apply_lynch(game: Game, victim_id: int) -> tuple[Player | None, list[LocMsg]
     lines = [
         LocMsg(
             "pub.lynch_reveal",
-            {"name": victim.display(), "role": victim.role.value if victim.role else "?"},
+            {"name": victim.mention(), "role": victim.role.value if victim.role else "?"},
         )
     ]
     if victim.role == Role.SUICIDE:
@@ -320,7 +320,7 @@ def winners_text(keys: list[str], lang: Lang | str) -> str:
 
 
 def format_alive_list(players: list[Player]) -> str:
-    return "\n".join(f"{i}. {p.display()}" for i, p in enumerate(players, 1))
+    return "\n".join(f"{i}. {p.mention()}" for i, p in enumerate(players, 1))
 
 
 def role_composition(players: list[Player], lang: Lang) -> str:
