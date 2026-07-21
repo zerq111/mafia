@@ -36,8 +36,8 @@
 ### 2. Установка
 
 ```bash
-git clone https://github.com/YOUR_USER/YOUR_REPO.git
-cd YOUR_REPO
+git clone https://github.com/zerq111/mafia.git
+cd mafia
 
 python -m venv .venv
 
